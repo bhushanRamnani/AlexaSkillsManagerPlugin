@@ -18,6 +18,7 @@ dependencies {
     compile(gradleApi())
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     compile("com.amazonaws:aws-java-sdk-lambda:1.11.486")
+    compile("commons-io:commons-io:2.4")
 }
 
 tasks.withType<KotlinCompile> {

@@ -8,39 +8,48 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder
 import com.amazonaws.services.lambda.model.GetFunctionRequest
+import com.amazonaws.services.lambda.model.UpdateFunctionCodeRequest
+import org.apache.commons.io.IOUtils
 import org.gradle.api.DefaultTask
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-import org.gradle.plugin.devel.plugins.JavaGradlePluginPlugin
+
+import java.io.File
 import java.nio.ByteBuffer
-import java.nio.file.Files
+import java.io.FileInputStream
+
 
 open class PublishFunctionTask : DefaultTask() {
 
     @Input
-    var region: String? = null
+    lateinit var region: String
 
     @Input
-    var awsAccessKeyId: String? = null
+    lateinit var awsAccessKeyId: String
 
     @Input
-    var awsSecretAccessKey: String? = null
+    lateinit var awsSecretAccessKey: String
 
     @Input
-    var functionName: String? = null
+    lateinit var functionName: String
 
-    var testEvent: String? = null
+    @Input
+    lateinit var archivePath: File
+
+    lateinit var testEvent: String
 
 
     private fun validateProperties() {
-        if (region ==  null) {
+        if (!::region.isInitialized) {
             throw IllegalArgumentException("Please configure 'region'")
         }
 
-        if (functionName == null) {
+        if (!::functionName.isInitialized) {
             throw IllegalArgumentException("Please configure 'functionName'")
+        }
+
+        if (!::archivePath.isInitialized) {
+            throw IllegalArgumentException("Could not find the archivePath for the artifact.")
         }
     }
 
@@ -59,18 +68,24 @@ open class PublishFunctionTask : DefaultTask() {
             println("Could not find function with name $functionName")
             System.exit(0)
         }
-        println("Target Function ARN: $functionArn. Updating the function now.")
+        println("Target Function ARN: $functionArn. Updating the function now. "
+                + "Project Archive: ${archivePath.absolutePath}")
 
-        println("Project ZIP path: ${getProjectZip()}")
-        //val updateFunctionCodeRequest = UpdateFunctionCodeRequest()
-        //        .withFunctionName(functionName!!)
-        //        .withZipFile(zipFile)
+        var byteArray: ByteArray? = null
 
-    }
+        FileInputStream(archivePath).use {
+            byteArray = IOUtils.toByteArray(it)
+        }
+        val byteBuff = ByteBuffer.wrap(byteArray)
 
-    fun getProjectZip() : String {
+        val updateFunctionCodeRequest = UpdateFunctionCodeRequest()
+                .withFunctionName(functionName)
+                .withZipFile(byteBuff)
 
-        return project.properties["distsDir"]!!.toString()
+        val updateFunctionCodeResponse = awsLambda.updateFunctionCode(updateFunctionCodeRequest)
+        val codeSize = updateFunctionCodeResponse?.codeSize
+
+        println("Lambda function code size: $codeSize in function ARN: $functionArn")
     }
 
     fun buildAWSLambdaClient() : AWSLambda {

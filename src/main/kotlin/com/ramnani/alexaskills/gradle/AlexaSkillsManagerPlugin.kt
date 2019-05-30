@@ -5,6 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.bundling.Zip
+import java.io.File
 
 
 class AlexaSkillsManagerPlugin : Plugin<Project> {
@@ -13,6 +14,8 @@ class AlexaSkillsManagerPlugin : Plugin<Project> {
         const val PUBLISH_FUNCTION_TASK = "publishFunction"
         const val BUILD_ZIP_TASK = "buildZip"
     }
+
+    lateinit var archivePath: File
 
     /**
      * Step 1: Upload the jar to lambda with a new version
@@ -37,7 +40,7 @@ class AlexaSkillsManagerPlugin : Plugin<Project> {
             it.into("lib") { d ->
                 d.from(project.configurations.getByName("compileClasspath"))
             }
-            println("Dst: ${project.file("lib").absolutePath}")
+            this.archivePath = it.archivePath
         }
 
         project.tasks.register(PUBLISH_FUNCTION_TASK,
@@ -48,6 +51,7 @@ class AlexaSkillsManagerPlugin : Plugin<Project> {
             it.awsSecretAccessKey = extension.awsSecretAccessKey
             it.region = extension.region
             it.functionName = extension.functionName
+            it.archivePath = this.archivePath
         }
     }
 }

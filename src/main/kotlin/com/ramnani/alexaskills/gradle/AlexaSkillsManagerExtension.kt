@@ -2,8 +2,8 @@ package com.ramnani.alexaskills.gradle
 
 
 open class AlexaSkillsManagerExtension {
-    var region: String? = null
-    var awsAccessKeyId: String? = null
-    var awsSecretAccessKey: String? = null
-    var functionName: String? = null
+    lateinit var region: String
+    lateinit var awsAccessKeyId: String
+    lateinit var awsSecretAccessKey: String
+    lateinit var functionName: String
 }
